@@ -1,18 +1,23 @@
 import { app, errorHandler } from 'mu';
 
-import { fetchFileBundlingJobForAgenda, fetchFilesFromAgenda } from './queries/agenda';
-import { createJob, insertAndattachCollectionToJob, updateJobStatus } from './queries/job';
+import { fetchFilesFromAgenda } from './queries/agenda';
+import { createJob, insertAndattachCollectionToJob, updateJobStatus, findJobUsingCollection } from './queries/job';
+import { findCollectionByMembers } from './queries/collection';
 import { overwriteFilenames } from './lib/overwrite-filename';
 import { JSONAPI_JOB_TYPE } from './config';
 
-app.get('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, res) => {
-  let job = await fetchFileBundlingJobForAgenda(req.params.agenda_id);
+app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, res) => {
+  const files = await fetchFilesFromAgenda(req.params.agenda_id);
+  const collection = await findCollectionByMembers(files.map(m => m.uri));
+  let job;
+  if (collection) {
+    job = await findJobUsingCollection(collection.uri);
+  }
   if (job) {
     res.status(200);
   } else {
     job = await createJob();
-    const filesPromise = fetchFilesFromAgenda(req.params.agenda_id); // Here, so we use the users access rights
-    addAgendaCollectionToBundlingJob(job, filesPromise); // Fire but don't await
+    documentBundlingJobForAgenda(req.params.agenda_id, job, files); // Fire but don't await
     res.status(201);
   }
   const payload = {};
@@ -30,11 +35,10 @@ app.get('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, r
   res.send(payload);
 });
 
-async function addAgendaCollectionToBundlingJob (job, filesPromise) {
-  const files = await filesPromise;
+async function documentBundlingJobForAgenda (agendaId, job, files) {
   await overwriteFilenames(files);
   await insertAndattachCollectionToJob(job, files);
-  await updateJobStatus(job.uri, null);
+  await updateJobStatus(job.uri, null); // Unset "RUNNING" status, so the file-bundling-service can pick this up
 }
 
 app.use(errorHandler);

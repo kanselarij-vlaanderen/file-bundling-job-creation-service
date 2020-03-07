@@ -1,7 +1,8 @@
-import { update, uuid as generateUuid, sparqlEscapeString, sparqlEscapeUri, sparqlEscapeDateTime } from 'mu';
+import { query, update, uuid as generateUuid, sparqlEscapeString, sparqlEscapeUri, sparqlEscapeDateTime } from 'mu';
 import { updateSudo } from '@lblod/mu-auth-sudo';
 import { RESOURCE_BASE, RDF_JOB_TYPE } from '../config';
 import { createCollection } from '../lib/collection';
+import { parseSparqlResults } from './util';
 
 // const SCHEDULED = 'scheduled';
 const RUNNING = 'http://vocab.deri.ie/cogs#Running';
@@ -33,10 +34,11 @@ async function createJob () {
 }
 
 async function insertAndattachCollectionToJob (job, collectionMembers) {
-  const collection = createCollection(collectionMembers);
+  const collection = await createCollection(collectionMembers.map(m => m.uri));
   const queryString = `
-  PREFIX cogs: <http://vocab.deri.ie/cogs#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
+  PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
   INSERT {
       GRAPH ?g {
@@ -99,9 +101,37 @@ WHERE {
   await updateSudo(queryString);
 }
 
+async function findJobUsingCollection (collection) {
+  const queryString = `
+  PREFIX prov: <http://www.w3.org/ns/prov#>
+  PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+
+  SELECT (?job AS ?uri) (?uuid as ?id) ?generated ?status ?created ?started ?ended WHERE {
+      ${sparqlEscapeUri(collection)} a prov:Collection .
+      ?job a ${sparqlEscapeUri(RDF_JOB_TYPE)} ;
+          mu:uuid ?uuid ;
+          prov:used ${sparqlEscapeUri(collection)} .
+      OPTIONAL { ?job ext:status ?status }
+      OPTIONAL { ?job prov:generated ?generated }
+      OPTIONAL { ?job dct:created ?created }
+      OPTIONAL { ?job prov:startedAtTime ?started }
+      OPTIONAL { ?job prov:endedAtTime ?ended }
+  }`;
+  const results = await query(queryString); // NO SUDO!
+  const parsedResults = parseSparqlResults(results);
+  if (parsedResults.length > 0) {
+    return parsedResults[0];
+  } else {
+    return null;
+  }
+}
+
 export {
   createJob,
   insertAndattachCollectionToJob,
   updateJobStatus,
-  RUNNING, SUCCESS, FAIL
+  RUNNING, SUCCESS, FAIL,
+  findJobUsingCollection
 };
