@@ -2,7 +2,7 @@ import { app, errorHandler } from 'mu';
 
 import { fetchFileBundlingJobForAgenda, fetchFilesFromAgenda } from './queries/agenda';
 import { createJob, insertAndattachCollectionToJob, updateJobStatus } from './queries/job';
-import { overwriteFilenames } from './lib/overwrite-filenames';
+import { overwriteFilenames } from './lib/overwrite-filename';
 import { JSONAPI_JOB_TYPE } from './config';
 
 app.get('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, res) => {
