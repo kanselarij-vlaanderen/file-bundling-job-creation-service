@@ -40,3 +40,29 @@ Also read access to the entities grouping the documents (*agenda* for example ) 
 #### Resources
 
 See [file-bundling-service](https://github.com/kanselarij-vlaanderen/file-bundling-service)' README.
+
+## REST API
+#### POST /agendas/:agenda_id/agendaitems/documents/files/archive
+Request the creation of an archive of all files related to agenda `:agenda_id`.
+
+##### Response
+###### 201 Created
+On successful creation of a job.
+
+```json
+{
+  "data": {
+    "type": "file-bundling-jobs",
+    "id": "5f680870-5984-11ea-98be-11315490e00b",
+    "attributes": {
+      "uri": "http://mu.semte.ch/services/file-bundling-service/file-bundling-jobs/5f680870-5984-11ea-98be-11315490e00b",
+      "status": "http://vocab.deri.ie/cogs#Running",
+      "created": "2020-02-27T17:12:45.943Z"
+    }
+  }
+}
+```
+
+###### 200 OK
+When serving an already-existing job. Response payload similar to above.
+
