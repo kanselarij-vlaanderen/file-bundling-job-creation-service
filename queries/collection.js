@@ -21,7 +21,6 @@ WHERE {
   `;
   const results = await query(q); // NO SUDO!
   const parsedResults = parseSparqlResults(results);
-  console.log('parsed results:', parsedResults);
   if (parsedResults.length > 0) {
     return parsedResults[0];
   } else {
