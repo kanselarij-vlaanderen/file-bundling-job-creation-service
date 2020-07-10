@@ -15,10 +15,14 @@ app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, 
   }
   if (job) {
     res.status(200);
-  } else {
+  } else if (files && files.length > 0) {
     job = await createJob();
     documentBundlingJobForAgenda(req.params.agenda_id, job, files); // Fire but don't await
     res.status(201);
+  } else {
+    res.status(500);
+    res.send('Agenda does not have zippable documents');
+    return;
   }
   const payload = {};
   payload.data = {
