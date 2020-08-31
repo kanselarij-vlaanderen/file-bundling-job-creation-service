@@ -18,7 +18,7 @@ const fetchFilesFromAgenda = async (agendaId) => {
           mu:uuid ${sparqlEscapeString(agendaId)} ;
           dct:hasPart ?agendaitem .
       ?agendaitem a besluit:Agendapunt ;
-          ext:bevatAgendapuntDocumentversie ?document .
+          besluitvorming:geagendeerdStuk ?document .
       ?document a dossier:Stuk ;
           dct:title ?documentName ;
           ext:file ?file .
