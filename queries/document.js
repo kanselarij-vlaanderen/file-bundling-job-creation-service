@@ -9,7 +9,6 @@ async function renameFileFromDocument (doc, file, newFileName) {
    */
   const q = `
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
   PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
 
