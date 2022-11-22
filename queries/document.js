@@ -9,8 +9,8 @@ async function renameFileFromDocument (doc, file, newFileName) {
    */
   const q = `
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
   PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>
+  PREFIX prov: <http://www.w3.org/ns/prov#>
 
   DELETE {
       GRAPH ?g {
@@ -25,7 +25,7 @@ async function renameFileFromDocument (doc, file, newFileName) {
   WHERE {
       GRAPH ?g {
           ${sparqlEscapeUri(doc)} a dossier:Stuk ;
-              ext:file ${sparqlEscapeUri(file)} .
+              prov:value ${sparqlEscapeUri(file)} .
           ${sparqlEscapeUri(file)} a nfo:FileDataObject ;
               nfo:fileName ?fileName .
           FILTER (?fileName != ${sparqlEscapeString(newFileName)})
