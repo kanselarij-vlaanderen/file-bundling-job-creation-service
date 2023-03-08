@@ -1,6 +1,6 @@
 import { app, errorHandler } from 'mu';
 
-import { fetchFilesFromAgenda, fetchFilesFromAgendaByMandatees } from './queries/agenda';
+import { fetchFilesFromAgenda, fetchFilesFromAgendaByMandatees, fetchDecisionsByMandatees, fetchDecisionsFromAgenda} from './queries/agenda';
 import { createJob, insertAndattachCollectionToJob, updateJobStatus, findJobUsingCollection } from './queries/job';
 import { findCollectionByMembers } from './queries/collection';
 import { overwriteFilenames } from './lib/overwrite-filename';
@@ -11,10 +11,17 @@ app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, 
   let files;
   if (mandateeIdsString) {
     const mandateeIds = mandateeIdsString.split(',');
+    if (req.query.decisions){
+      files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds)
+    }
     files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds);
   } else {
+    if (req.query.decisions){
+      files = await fetchDecisionsFromAgenda(req.params.agenda_id);
+    }
     files = await fetchFilesFromAgenda(req.params.agenda_id);
-  }
+  } 
+
   const collection = await findCollectionByMembers(files.map(m => m.uri));
   let job;
   if (collection) {
