@@ -8,18 +8,21 @@ import { JSONAPI_JOB_TYPE } from './config';
 
 app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, res) => {
   const mandateeIdsString = req.query.mandateeIds;
+  let decisions = req.query.decisions === 'true';
   let files;
   if (mandateeIdsString) {
     const mandateeIds = mandateeIdsString.split(',');
-    if (req.query.decisions){
+    if (decisions){
       files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds)
+    } else {
+      files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds);
     }
-    files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds);
   } else {
-    if (req.query.decisions){
+    if (decisions){
       files = await fetchDecisionsFromAgenda(req.params.agenda_id);
+    } else {
+      files = await fetchFilesFromAgenda(req.params.agenda_id);
     }
-    files = await fetchFilesFromAgenda(req.params.agenda_id);
   } 
 
   const collection = await findCollectionByMembers(files.map(m => m.uri));

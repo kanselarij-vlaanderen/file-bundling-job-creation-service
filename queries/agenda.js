@@ -44,17 +44,22 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds) => {
 
   SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName
   WHERE {
-      ?agenda a besluitvorming:Agenda ;
-          mu:uuid ${sparqlEscapeString(agendaId)} ;
-          dct:hasPart ?agendaitem .
       ?agendaitem a besluit:Agendapunt ;
           besluitvorming:geagendeerdStuk ?document .
       {
+        ?agenda a besluitvorming:Agenda ;
+          mu:uuid ${sparqlEscapeString(agendaId)} ;
+          dct:hasPart ?agendaitem .
         ?agendaitem ext:heeftBevoegdeVoorAgendapunt ?mandatee .
         ?mandatee mu:uuid ?mandateeId .
-        FILTER (?mandateeId IN (${mandateeIds.map((id) => sparqlEscapeString(id)).join(', ')}))
+        FILTER (?mandateeId IN (${mandateeIds
+          .map((id) => sparqlEscapeString(id))
+          .join(", ")}))
       } UNION {
-        FILTER NOT EXISTS { ?agendaitem ext:heeftBevoegdeVoorAgendapunt ?mandatee }
+        ?agenda a besluitvorming:Agenda ;
+          mu:uuid ${sparqlEscapeString(agendaId)} ;
+          dct:hasPart ?agendaitem .
+        FILTER NOT EXISTS { ?agendaitem ext:heeftBevoegdeVoorAgendapunt ?mandatee . }
       }
       ?document a dossier:Stuk ;
           dct:title ?documentName .
@@ -65,7 +70,7 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds) => {
   }`;
   const data = await query(queryString);
   return parseSparqlResults(data);
-}
+};
 
 const fetchDecisionsByMandatees = async (agendaId, mandateeIds) => {
   const queryString = `
@@ -81,16 +86,21 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds) => {
 
   SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName
   WHERE {
-      ?agenda a besluitvorming:Agenda ;
-          mu:uuid ${sparqlEscapeString(agendaId)} ;
-          dct:hasPart ?agendaitem .
       ?agendaitem a besluit:Agendapunt ;
           ^dct:subject/besluitvorming:heeftBeslissing/^besluitvorming:beschrijft ?document .
       {
+        ?agenda a besluitvorming:Agenda ;
+          mu:uuid ${sparqlEscapeString(agendaId)} ;
+          dct:hasPart ?agendaitem .
         ?agendaitem ext:heeftBevoegdeVoorAgendapunt ?mandatee .
         ?mandatee mu:uuid ?mandateeId .
-        FILTER (?mandateeId IN (${mandateeIds.map((id) => sparqlEscapeString(id)).join(', ')}))
+        FILTER (?mandateeId IN (${mandateeIds
+          .map((id) => sparqlEscapeString(id))
+          .join(", ")}))
       } UNION {
+        ?agenda a besluitvorming:Agenda ;
+          mu:uuid ${sparqlEscapeString(agendaId)} ;
+          dct:hasPart ?agendaitem .
         FILTER NOT EXISTS { ?agendaitem ext:heeftBevoegdeVoorAgendapunt ?mandatee }
       }
       ?document a dossier:Stuk ;
@@ -102,7 +112,7 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds) => {
   }`;
   const data = await query(queryString);
   return parseSparqlResults(data);
-}
+};
 
 const fetchDecisionsFromAgenda = async (agendaId) => {
   const queryString = `
