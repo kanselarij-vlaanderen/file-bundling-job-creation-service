@@ -28,7 +28,7 @@ async function renameFileFromDocument (doc, file, newFileName) {
               prov:value ${sparqlEscapeUri(file)} . }
           UNION
           { ${sparqlEscapeUri(doc)} a dossier:Stuk ;
-              prov:value / ^prov:hadPrimarySource? ${sparqlEscapeUri(file)} . }
+              prov:value / ^prov:hadPrimarySource ${sparqlEscapeUri(file)} . }
           ${sparqlEscapeUri(file)} a nfo:FileDataObject ;
               nfo:fileName ?fileName .
           FILTER (?fileName != ${sparqlEscapeString(newFileName)})
