@@ -43,7 +43,7 @@ See [file-bundling-service](https://github.com/kanselarij-vlaanderen/file-bundli
 
 ## REST API
 #### POST /agendas/:agenda_id/agendaitems/documents/files/archive
-Request the creation of an archive of all files related to agenda `:agenda_id`.
+Request the creation of an archive of all files related to agenda `:agenda_id`. An optional query parameter is allowed, `mandateeIds`, which is a comma-separated string containing the ids of mandatees whose documents we want to fetch. When `mandateeIds` is provided all document linked to an agendaitem which are linked to the listed mandatees will be bundled, as well as all documents linked to an agendaitem with no linked mandatees. If `mandateeIds` is not provided all documents of the agenda will be bundled.
 
 ##### Response
 ###### 201 Created
