@@ -1,7 +1,7 @@
 import { sparqlEscapeString, query } from 'mu';
 import { parseSparqlResults } from './util';
 
-const fetchFilesFromAgenda = async (agendaId) => {
+const fetchFilesFromAgenda = async (agendaId, hasLimitedRole, linkedMandatees) => {
   const queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -30,7 +30,7 @@ const fetchFilesFromAgenda = async (agendaId) => {
   return parseSparqlResults(data);
 };
 
-const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds) => {
+const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, hasLimitedRole, linkedMandatees) => {
   const queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -72,7 +72,7 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds) => {
   return parseSparqlResults(data);
 };
 
-const fetchDecisionsByMandatees = async (agendaId, mandateeIds) => {
+const fetchDecisionsByMandatees = async (agendaId, mandateeIds, hasLimitedRole, linkedMandatees) => {
   const queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -114,7 +114,7 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds) => {
   return parseSparqlResults(data);
 };
 
-const fetchDecisionsFromAgenda = async (agendaId) => {
+const fetchDecisionsFromAgenda = async (agendaId, hasLimitedRole, linkedMandatees) => {
   const queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
