@@ -3,43 +3,30 @@ import { app, errorHandler } from 'mu';
 import { fetchFilesFromAgenda, fetchFilesFromAgendaByMandatees, fetchDecisionsByMandatees, fetchDecisionsFromAgenda} from './queries/agenda';
 import { createJob, insertAndattachCollectionToJob, updateJobStatus, findJobUsingCollection } from './queries/job';
 import { findCollectionByMembers } from './queries/collection';
-import { fetchCurrentUser, fetchMandateesForUserOrganization } from './queries/user';
+import { fetchCurrentUser, fetchMandateesForUserOrganization, filterByConfidentiality } from './queries/user';
 import { overwriteFilenames } from './lib/overwrite-filename';
-import { JSONAPI_JOB_TYPE, LIMITED_ACCESS_ROLES } from './config';
+import { JSONAPI_JOB_TYPE } from './config';
 
 app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, res) => {
   const mandateeIdsString = req.query.mandateeIds;
   let decisions = req.query.decisions === 'true';
   let files;
   const currentUser = await fetchCurrentUser(req.headers['mu-session-id']);
-  let hasLimitedRole = false;
-  if (currentUser && currentUser.memberships) {
-    for (let i = 0; i < currentUser.memberships.length; i++) {
-      if (LIMITED_ACCESS_ROLES.indexOf(currentUser.memberships[i].role) > -1) {
-        hasLimitedRole = true;
-      }
-    }
-  }
-  let linkedMandatees = [];
-  if (hasLimitedRole) {
-    // we can only include the confidential documents for the mandatees linked to the current user's organization
-    linkedMandatees = await fetchMandateesForUserOrganization(currentUser);
-  }
   if (mandateeIdsString) {
     const mandateeIds = mandateeIdsString.split(',');
     if (decisions){
-      files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds, hasLimitedRole, linkedMandatees)
+      files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds, currentUser)
     } else {
-      files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds, hasLimitedRole, linkedMandatees);
+      files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds, currentUser);
     }
   } else {
     if (decisions){
-      files = await fetchDecisionsFromAgenda(req.params.agenda_id, hasLimitedRole, linkedMandatees);
+      files = await fetchDecisionsFromAgenda(req.params.agenda_id, currentUser);
     } else {
-      files = await fetchFilesFromAgenda(req.params.agenda_id, hasLimitedRole, linkedMandatees);
+      files = await fetchFilesFromAgenda(req.params.agenda_id, currentUser);
     }
   }
-
+  files = await filterByConfidentiality(files, currentUser, decisions);
   const collection = await findCollectionByMembers(files.map(m => m.uri));
   let job;
   if (collection) {

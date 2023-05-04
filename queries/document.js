@@ -1,5 +1,7 @@
 import { updateSudo } from '@lblod/mu-auth-sudo';
-import { sparqlEscapeString, sparqlEscapeUri } from 'mu';
+import { sparqlEscapeString, sparqlEscapeUri , query } from 'mu';
+import { MANDATEE_CHECK_GRAPH } from '../config';
+import { parseSparqlResults } from './util';
 
 async function renameFileFromDocument (doc, file, newFileName) {
   /*
@@ -37,6 +39,39 @@ async function renameFileFromDocument (doc, file, newFileName) {
   await updateSudo(q);
 }
 
+
+async function getMandateesForDocument (documentUri, isDecision) {
+  if (!documentUri) {
+    return [];
+  }
+  let queryString = `PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT DISTINCT ?mandatee WHERE {
+   GRAPH ${sparqlEscapeUri(MANDATEE_CHECK_GRAPH)} {
+    ?submissionActivity prov:generated ${sparqlEscapeUri(documentUri)} ;
+                        ext:indieningVindtPlaatsTijdens ?subcase  .
+    ?subcase ext:heeftBevoegde ?mandatee .
+   }
+}`
+  if (isDecision) {
+    queryString = `PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX besluitvorming: <https://data.vlaanderen.be/ns/besluitvorming#>
+
+SELECT DISTINCT ?mandatee WHERE {
+   GRAPH ${sparqlEscapeUri(MANDATEE_CHECK_GRAPH)} {
+     ${sparqlEscapeUri(documentUri)} besluitvorming:beschrijft ?decisionActivity .
+     ?decisionActivity ext:beslissingVindtPlaatsTijdens ?subcase .
+     ?subcase ext:heeftBevoegde ?mandatee .
+   }
+}`
+  }
+
+  const data = await query(queryString);
+  return parseSparqlResults(data);
+}
+
 export {
-  renameFileFromDocument
+  renameFileFromDocument,
+  getMandateesForDocument
 };
