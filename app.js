@@ -3,7 +3,7 @@ import { app, errorHandler } from 'mu';
 import { fetchFilesFromAgenda, fetchFilesFromAgendaByMandatees, fetchDecisionsByMandatees, fetchDecisionsFromAgenda} from './queries/agenda';
 import { createJob, insertAndattachCollectionToJob, updateJobStatus, findJobUsingCollection } from './queries/job';
 import { findCollectionByMembers } from './queries/collection';
-import { fetchCurrentUser, fetchMandateesForUserOrganization, filterByConfidentiality } from './queries/user';
+import { fetchCurrentUser, filterByConfidentiality } from './queries/user';
 import { overwriteFilenames } from './lib/overwrite-filename';
 import { JSONAPI_JOB_TYPE } from './config';
 
