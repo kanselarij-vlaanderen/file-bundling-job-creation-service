@@ -1,8 +1,8 @@
 import { sparqlEscapeString, query } from 'mu';
 import { parseSparqlResults } from './util';
 
-const fetchFilesFromAgenda = async (agendaId) => {
-  const queryString = `
+const fetchFilesFromAgenda = async (agendaId, currentUser) => {
+  let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
   PREFIX besluitvorming: <https://data.vlaanderen.be/ns/besluitvorming#>
@@ -12,7 +12,11 @@ const fetchFilesFromAgenda = async (agendaId) => {
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  if (currentUser.hasLimitedRole) {
+    queryString += ' ?confidentialityLevel'
+  }
+  queryString += `
   WHERE {
       ?agenda a besluitvorming:Agenda ;
           mu:uuid ${sparqlEscapeString(agendaId)} ;
@@ -21,7 +25,12 @@ const fetchFilesFromAgenda = async (agendaId) => {
           besluitvorming:geagendeerdStuk ?document .
       ?document a dossier:Stuk ;
           dct:title ?documentName .
-      ?document prov:value / ^prov:hadPrimarySource? ?file .
+      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+  if (currentUser.hasLimitedRole) {
+    queryString += `
+      ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
+  }
+  queryString += `
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
@@ -30,8 +39,8 @@ const fetchFilesFromAgenda = async (agendaId) => {
   return parseSparqlResults(data);
 };
 
-const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds) => {
-  const queryString = `
+const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUser) => {
+  let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
   PREFIX besluitvorming: <https://data.vlaanderen.be/ns/besluitvorming#>
@@ -42,7 +51,11 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds) => {
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  if (currentUser.hasLimitedRole) {
+    queryString += ' ?confidentialityLevel'
+  }
+  queryString += `
   WHERE {
       ?agendaitem a besluit:Agendapunt ;
           besluitvorming:geagendeerdStuk ?document .
@@ -63,7 +76,12 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds) => {
       }
       ?document a dossier:Stuk ;
           dct:title ?documentName .
-      ?document prov:value / ^prov:hadPrimarySource? ?file .
+      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+  if (currentUser.hasLimitedRole) {
+    queryString += `
+      ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
+  }
+  queryString += `
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
@@ -72,8 +90,8 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds) => {
   return parseSparqlResults(data);
 };
 
-const fetchDecisionsByMandatees = async (agendaId, mandateeIds) => {
-  const queryString = `
+const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser) => {
+  let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
   PREFIX besluitvorming: <https://data.vlaanderen.be/ns/besluitvorming#>
@@ -84,7 +102,11 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds) => {
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  if (currentUser.hasLimitedRole) {
+    queryString += ' ?confidentialityLevel'
+  }
+  queryString += `
   WHERE {
       ?agendaitem a besluit:Agendapunt ;
           ^dct:subject/besluitvorming:heeftBeslissing/^besluitvorming:beschrijft ?document .
@@ -105,7 +127,12 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds) => {
       }
       ?document a dossier:Stuk ;
           dct:title ?documentName .
-      ?document prov:value / ^prov:hadPrimarySource? ?file .
+      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+  if (currentUser.hasLimitedRole) {
+    queryString += `
+      ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
+  }
+  queryString += `
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
@@ -114,8 +141,8 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds) => {
   return parseSparqlResults(data);
 };
 
-const fetchDecisionsFromAgenda = async (agendaId) => {
-  const queryString = `
+const fetchDecisionsFromAgenda = async (agendaId, currentUser) => {
+  let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
   PREFIX besluitvorming: <https://data.vlaanderen.be/ns/besluitvorming#>
@@ -126,7 +153,11 @@ const fetchDecisionsFromAgenda = async (agendaId) => {
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  if (currentUser.hasLimitedRole) {
+    queryString += ' ?confidentialityLevel'
+  }
+  queryString += `
   WHERE {
       ?agenda a besluitvorming:Agenda ;
           mu:uuid ${sparqlEscapeString(agendaId)} ;
@@ -135,7 +166,12 @@ const fetchDecisionsFromAgenda = async (agendaId) => {
           ^dct:subject/besluitvorming:heeftBeslissing/^besluitvorming:beschrijft ?document .
       ?document a dossier:Stuk ;
           dct:title ?documentName .
-      ?document prov:value / ^prov:hadPrimarySource? ?file .
+      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+  if (currentUser.hasLimitedRole) {
+    queryString += `
+      ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
+  }
+  queryString += `
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
