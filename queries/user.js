@@ -23,8 +23,10 @@ PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
                   org:role ?role ;
                   org:organization ?organization .
     }
-    GRAPH <http://mu.semte.ch/graphs/system/users> {
-      OPTIONAL { ?organization sign:isOrganisatieVoorMandataris ?mandatee .  }
+    OPTIONAL {
+      GRAPH <http://mu.semte.ch/graphs/system/users> {
+        ?organization sign:isOrganisatieVoorMandataris ?mandatee .
+      }
     }
   }`;
   const currentAccount = await query(accountQuery);
