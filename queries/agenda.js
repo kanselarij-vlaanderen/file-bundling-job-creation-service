@@ -1,7 +1,7 @@
 import { sparqlEscapeString, query } from 'mu';
 import { parseSparqlResults } from './util';
 
-const fetchFilesFromAgenda = async (agendaId, currentUser) => {
+const fetchFilesFromAgenda = async (agendaId, currentUser, extensions) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -31,6 +31,7 @@ const fetchFilesFromAgenda = async (agendaId, currentUser) => {
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
   }
   queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
@@ -39,7 +40,7 @@ const fetchFilesFromAgenda = async (agendaId, currentUser) => {
   return parseSparqlResults(data);
 };
 
-const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUser) => {
+const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUser, extensions) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -82,6 +83,7 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
   }
   queryString += `
+   VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
@@ -90,7 +92,7 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
   return parseSparqlResults(data);
 };
 
-const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser) => {
+const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser, extensions) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -133,6 +135,7 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser) => 
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
   }
   queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
@@ -141,7 +144,7 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser) => 
   return parseSparqlResults(data);
 };
 
-const fetchDecisionsFromAgenda = async (agendaId, currentUser) => {
+const fetchDecisionsFromAgenda = async (agendaId, currentUser, extensions) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -172,6 +175,7 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser) => {
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
   }
   queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .

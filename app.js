@@ -9,21 +9,22 @@ import { JSONAPI_JOB_TYPE } from './config';
 
 app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, res) => {
   const mandateeIdsString = req.query.mandateeIds;
+  const extensions = req.query.extensions ? req.query.extensions.split(",") : []
   let decisions = req.query.decisions === 'true';
   let files;
   const currentUser = await fetchCurrentUser(req.headers['mu-session-id']);
   if (mandateeIdsString) {
     const mandateeIds = mandateeIdsString.split(',');
     if (decisions){
-      files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds, currentUser)
+      files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds, currentUser, extensions)
     } else {
-      files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds, currentUser);
+      files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds, currentUser, extensions);
     }
   } else {
     if (decisions){
-      files = await fetchDecisionsFromAgenda(req.params.agenda_id, currentUser);
+      files = await fetchDecisionsFromAgenda(req.params.agenda_id, currentUser, extensions);
     } else {
-      files = await fetchFilesFromAgenda(req.params.agenda_id, currentUser);
+      files = await fetchFilesFromAgenda(req.params.agenda_id, currentUser, extensions);
     }
   }
   files = await filterByConfidentiality(files, currentUser, decisions);
