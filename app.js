@@ -11,7 +11,7 @@ const EXTENSION_PDF = "pdf";
 
 app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, res) => {
   const mandateeIdsString = req.query.mandateeIds;
-  const extensions = req.query.extensions ? req.query.extensions.split(",") : [EXTENSION_PDF];
+  const extensions = req.query.pdfOnly === 'true' ? [EXTENSION_PDF] : [] ;
   let decisions = req.query.decisions === 'true';
   let files;
   const currentUser = await fetchCurrentUser(req.headers['mu-session-id']);

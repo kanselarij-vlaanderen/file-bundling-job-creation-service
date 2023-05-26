@@ -32,7 +32,7 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions) => {
   }
   if (extensions.length) {
     queryString += `
-    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }`
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension).toLowerCase()).join(" ")} }`
   }
   queryString += `
       ?file a nfo:FileDataObject ;
@@ -87,7 +87,7 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
   }
   if (extensions.length) {
     queryString += `
-    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }`
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension).toLowerCase()).join(" ")} }`
   }
   queryString += `
       ?file a nfo:FileDataObject ;
@@ -142,7 +142,7 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser, ext
   }
   if (extensions.length) {
     queryString += `
-    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }`
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension).toLowerCase()).join(" ")} }`
   }
   queryString += `
       ?file a nfo:FileDataObject ;
@@ -185,7 +185,7 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser, extensions) => {
   }
   if (extensions.length) {
     queryString += `
-    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }`
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension).toLowerCase()).join(" ")} }`
   }
   queryString += `
       ?file a nfo:FileDataObject ;
