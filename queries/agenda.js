@@ -30,8 +30,11 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions) => {
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
   }
+  if (extensions.length) {
+    queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }`
+  }
   queryString += `
-    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
@@ -82,8 +85,11 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
   }
+  if (extensions.length) {
+    queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }`
+  }
   queryString += `
-   VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
@@ -134,8 +140,11 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser, ext
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
   }
+  if (extensions.length) {
+    queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }`
+  }
   queryString += `
-    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
@@ -174,8 +183,11 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser, extensions) => {
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
   }
+  if (extensions.length) {
+    queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }`
+  }
   queryString += `
-    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension)).join(" ")} }
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
           dbpedia:fileExtension ?extension .
