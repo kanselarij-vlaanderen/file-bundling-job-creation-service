@@ -109,8 +109,9 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser, ext
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+  PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  SELECT DISTINCT (COALESCE(?flattenedFile, ?file) AS ?uri) ?name ?extension ?document ?documentName`
   if (currentUser.hasLimitedRole) {
     queryString += ' ?confidentialityLevel'
   }
@@ -135,7 +136,8 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser, ext
       }
       ?document a dossier:Stuk ;
           dct:title ?documentName .
-      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+      ?document prov:value / ^prov:hadPrimarySource? ?file .
+      OPTIONAL { ?document sign:getekendStukKopie / prov:value ?flattenedFile }`
   if (currentUser.hasLimitedRole) {
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
@@ -164,8 +166,9 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser, extensions) => {
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+  PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  SELECT DISTINCT (COALESCE(?flattenedFile, ?file) AS ?uri) ?name ?extension ?document ?documentName`
   if (currentUser.hasLimitedRole) {
     queryString += ' ?confidentialityLevel'
   }
@@ -178,7 +181,8 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser, extensions) => {
           ^dct:subject/besluitvorming:heeftBeslissing/^besluitvorming:beschrijft ?document .
       ?document a dossier:Stuk ;
           dct:title ?documentName .
-      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+      ?document prov:value / ^prov:hadPrimarySource? ?file .
+      OPTIONAL { ?document sign:getekendStukKopie / prov:value ?flattenedFile }`
   if (currentUser.hasLimitedRole) {
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
