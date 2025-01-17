@@ -11,6 +11,7 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions) => {
   PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
+  PREFIX pav: <http://purl.org/pav/>
 
   SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
   if (currentUser.hasLimitedRole) {
@@ -25,6 +26,7 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions) => {
           besluitvorming:geagendeerdStuk ?document .
       ?document a dossier:Stuk ;
           dct:title ?documentName .
+      FILTER NOT EXISTS { [] pav:previousVersion ?document }
       ?document prov:value / ^prov:hadPrimarySource? ?file . `
   if (currentUser.hasLimitedRole) {
     queryString += `
@@ -54,6 +56,7 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+  PREFIX pav: <http://purl.org/pav/>
 
   SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
   if (currentUser.hasLimitedRole) {
@@ -63,6 +66,7 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
   WHERE {
       ?agendaitem a besluit:Agendapunt ;
           besluitvorming:geagendeerdStuk ?document .
+      FILTER NOT EXISTS { [] pav:previousVersion ?document }
       {
         ?agenda a besluitvorming:Agenda ;
           mu:uuid ${sparqlEscapeString(agendaId)} ;
@@ -142,7 +146,7 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser, ext
 
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
-          ?flattenedDocument prov:value ?flattenedFile . 
+          ?flattenedDocument prov:value ?flattenedFile .
       }
       BIND(IF(BOUND(?flattenedDocument), ?flattenedDocument, ?originalDocument) AS ?document)
       BIND(IF(BOUND(?flattenedFile), ?flattenedFile , ?originalFile) AS ?file)
@@ -194,7 +198,7 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser, extensions) => {
 
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
-          ?flattenedDocument prov:value ?flattenedFile . 
+          ?flattenedDocument prov:value ?flattenedFile .
       }
 
       BIND(COALESCE(?flattenedDocument , ?originalDocument) AS ?document)

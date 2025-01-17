@@ -30,7 +30,7 @@ app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, 
     }
   }
   files = await filterByConfidentiality(files, currentUser, decisions);
-  const collection = await findCollectionByMembers(files.map(m => m.uri));
+  const collection = await findCollectionByMembers(files.map(f => `uri:${f.uri}|name:${f.name}`));
   let job;
   if (collection) {
     job = await findJobUsingCollection(collection.uri);

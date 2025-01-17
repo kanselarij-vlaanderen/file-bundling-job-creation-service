@@ -34,7 +34,7 @@ async function createJob () {
 }
 
 async function insertAndattachCollectionToJob (job, collectionMembers) {
-  const collection = await createCollection(collectionMembers.map(m => m.uri));
+  const collection = createCollection(collectionMembers);
   const queryString = `
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
@@ -46,7 +46,7 @@ async function insertAndattachCollectionToJob (job, collectionMembers) {
           ${sparqlEscapeUri(collection.uri)} a prov:Collection ;
                 mu:uuid ${sparqlEscapeString(collection.id)} ;
                 ext:sha256 ${sparqlEscapeString(collection.sha)} ;
-                prov:hadMember ${collection.members.map(sparqlEscapeUri).join(',\n              ')} .
+                prov:hadMember ${collection.members.map(m => sparqlEscapeUri(m.uri)).join(',\n              ')} .
       }
   }
   WHERE {
