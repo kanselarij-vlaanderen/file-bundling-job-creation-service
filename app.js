@@ -1,6 +1,6 @@
 import { app, errorHandler } from 'mu';
 
-import { fetchFilesFromAgenda, fetchFilesFromAgendaByMandatees, fetchDecisionsByMandatees, fetchDecisionsFromAgenda} from './queries/agenda';
+import { fetchFilesFromAgenda, fetchFilesFromAgendaByMandatees, fetchDecisionsByMandatees, fetchDecisionsFromAgenda, fetchAreDecisionsReleased} from './queries/agenda';
 import { createJob, insertAndattachCollectionToJob, updateJobStatus, findJobUsingCollection } from './queries/job';
 import { findCollectionByMembers } from './queries/collection';
 import { fetchCurrentUser, filterByConfidentiality } from './queries/user';
@@ -15,18 +15,19 @@ app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, 
   let decisions = req.query.decisions === 'true';
   let files;
   const currentUser = await fetchCurrentUser(req.headers['mu-session-id']);
+  const areDecisionsReleased = await fetchAreDecisionsReleased(req.params.agenda_id);
   if (mandateeIdsString) {
     const mandateeIds = mandateeIdsString.split(',');
     if (decisions){
       files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds, currentUser, extensions)
     } else {
-      files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds, currentUser, extensions);
+      files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds, currentUser, extensions, areDecisionsReleased);
     }
   } else {
     if (decisions){
       files = await fetchDecisionsFromAgenda(req.params.agenda_id, currentUser, extensions);
     } else {
-      files = await fetchFilesFromAgenda(req.params.agenda_id, currentUser, extensions);
+      files = await fetchFilesFromAgenda(req.params.agenda_id, currentUser, extensions, areDecisionsReleased);
     }
   }
   files = await filterByConfidentiality(files, currentUser, decisions);
