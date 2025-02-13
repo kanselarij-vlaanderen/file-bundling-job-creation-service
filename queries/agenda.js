@@ -26,7 +26,8 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions) => {
           besluitvorming:geagendeerdStuk ?document .
       ?document a dossier:Stuk ;
           dct:title ?documentName .
-      FILTER NOT EXISTS { [] pav:previousVersion ?document }
+      OPTIONAL { ?previousDocument pav:previousVersion ?document . }
+      FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?previousDocument . }
       ?document prov:value / ^prov:hadPrimarySource? ?file . `
   if (currentUser.hasLimitedRole) {
     queryString += `
@@ -66,7 +67,8 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
   WHERE {
       ?agendaitem a besluit:Agendapunt ;
           besluitvorming:geagendeerdStuk ?document .
-      FILTER NOT EXISTS { [] pav:previousVersion ?document }
+      OPTIONAL { ?previousDocument pav:previousVersion ?document . }
+      FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?previousDocument . }
       {
         ?agenda a besluitvorming:Agenda ;
           mu:uuid ${sparqlEscapeString(agendaId)} ;
