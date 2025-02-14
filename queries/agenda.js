@@ -1,7 +1,8 @@
-import { sparqlEscapeString, query } from 'mu';
+import { sparqlEscapeString, sparqlEscapeUri, query } from 'mu';
 import { parseSparqlResults } from './util';
+import { DECISION_RESULT_CODES_LIST } from '../config';
 
-const fetchFilesFromAgenda = async (agendaId, currentUser, extensions) => {
+const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisionsReleased) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -29,6 +30,16 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions) => {
       OPTIONAL { ?nextDocument pav:previousVersion ?document . }
       FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
       ?document prov:value / ^prov:hadPrimarySource? ?file . `
+  if (areDecisionsReleased) {
+    queryString += `
+      OPTIONAL {
+        ?agendaitem ^dct:subject/besluitvorming:heeftBeslissing/besluitvorming:resultaat ?decisionResultCode .
+      }
+      FILTER (?decisionResultCode NOT IN (${DECISION_RESULT_CODES_LIST
+      .map((uri) => sparqlEscapeUri(uri))
+      .join(", ")}))
+    `
+  }
   if (currentUser.hasLimitedRole) {
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
@@ -46,7 +57,7 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions) => {
   return parseSparqlResults(data);
 };
 
-const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUser, extensions) => {
+const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUser, extensions, areDecisionsReleased) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -87,6 +98,16 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
       ?document a dossier:Stuk ;
           dct:title ?documentName .
       ?document prov:value / ^prov:hadPrimarySource? ?file . `
+  if (areDecisionsReleased) {
+    queryString += `
+      OPTIONAL {
+        ?agendaitem ^dct:subject/besluitvorming:heeftBeslissing/besluitvorming:resultaat ?decisionResultCode .
+      }
+      FILTER (?decisionResultCode NOT IN (${DECISION_RESULT_CODES_LIST
+      .map((uri) => sparqlEscapeUri(uri))
+      .join(", ")}))
+    `
+  }
   if (currentUser.hasLimitedRole) {
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
@@ -224,10 +245,32 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser, extensions) => {
   const data = await query(queryString);
   return parseSparqlResults(data);
 }
+const fetchAreDecisionsReleased = async (agendaId) => {
+  const queryString = `
+  PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+  PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+  PREFIX besluitvorming: <https://data.vlaanderen.be/ns/besluitvorming#>
+  PREFIX prov: <http://www.w3.org/ns/prov#>
+  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+
+  ASK WHERE {
+    ?agenda a besluitvorming:Agenda ;
+            mu:uuid ${sparqlEscapeString(agendaId)} .
+    ?meeting a besluit:Vergaderactiviteit .
+    ?agenda besluitvorming:isAgendaVoor ?meeting .
+    ?decisionPublicationActivity
+      ext:internalDecisionPublicationActivityUsed ?meeting ;
+      prov:startedAtTime ?decisionPublicationActivityStartDate .
+  }
+  `
+  const response = await query(queryString);
+  return response.boolean;
+}
 
 export {
   fetchFilesFromAgenda,
   fetchFilesFromAgendaByMandatees,
   fetchDecisionsByMandatees,
   fetchDecisionsFromAgenda,
+  fetchAreDecisionsReleased,
 };
