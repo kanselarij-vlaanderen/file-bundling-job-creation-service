@@ -267,10 +267,146 @@ const fetchAreDecisionsReleased = async (agendaId) => {
   return response.boolean;
 }
 
+const fetchFilesFromAgendaitem = async(agendaitemId, currentUser, extensions) => {
+  let queryString = `
+  PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+  PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+  PREFIX besluitvorming: <https://data.vlaanderen.be/ns/besluitvorming#>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX dbpedia: <http://dbpedia.org/ontology/>
+  PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>
+  PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+  PREFIX prov: <http://www.w3.org/ns/prov#>
+  PREFIX pav: <http://purl.org/pav/>
+
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  if (currentUser.hasLimitedRole) {
+    queryString += ' ?confidentialityLevel'
+  }
+  queryString += `
+  WHERE {
+      ?agendaitem a besluit:Agendapunt ;
+          mu:uuid ${sparqlEscapeString(agendaitemId)} ;
+          besluitvorming:geagendeerdStuk ?document .
+      ?document a dossier:Stuk ;
+          dct:title ?documentName .
+      OPTIONAL { ?nextDocument pav:previousVersion ?document . }
+      FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
+      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+
+  if (currentUser.hasLimitedRole) {
+    queryString += `
+      ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
+  }
+  if (extensions.length) {
+    queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension).toLowerCase()).join(" ")} ${extensions.map(extension => sparqlEscapeString(extension).toUpperCase()).join(" ")} }`
+  }
+  queryString += `
+      ?file a nfo:FileDataObject ;
+          nfo:fileName ?name ;
+          dbpedia:fileExtension ?extension .
+  }`;
+  const data = await query(queryString);
+  return parseSparqlResults(data);
+}
+
+const fetchFilesFromCases = async(caseId, currentUser, extensions) => {
+  let queryString = `
+  PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+  PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+  PREFIX besluitvorming: <https://data.vlaanderen.be/ns/besluitvorming#>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX dbpedia: <http://dbpedia.org/ontology/>
+  PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>
+  PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+  PREFIX prov: <http://www.w3.org/ns/prov#>
+  PREFIX pav: <http://purl.org/pav/>
+
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  if (currentUser.hasLimitedRole) {
+    queryString += ' ?confidentialityLevel'
+  }
+  queryString += `
+  WHERE {
+      ?case a dossier:Dossier ;
+          mu:uuid ${sparqlEscapeString(caseId)} ;
+          dossier:Dossier.bestaatUit ?document .
+      ?document a dossier:Stuk ;
+          dct:title ?documentName .
+      FILTER NOT EXISTS { [] pav:previousVersion ?document }
+      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+
+  if (currentUser.hasLimitedRole) {
+    queryString += `
+      ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
+  }
+  if (extensions.length) {
+    queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension).toLowerCase()).join(" ")} ${extensions.map(extension => sparqlEscapeString(extension).toUpperCase()).join(" ")} }`
+  }
+  queryString += `
+      ?file a nfo:FileDataObject ;
+          nfo:fileName ?name ;
+          dbpedia:fileExtension ?extension .
+  }`;
+  const data = await query(queryString);
+  return parseSparqlResults(data);
+}
+
+const fetchFilesFromSubcases = async(subcaseId, currentUser, extensions) => {
+  let queryString = `
+  PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+  PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+  PREFIX besluitvorming: <https://data.vlaanderen.be/ns/besluitvorming#>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX dbpedia: <http://dbpedia.org/ontology/>
+  PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>
+  PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+  PREFIX prov: <http://www.w3.org/ns/prov#>
+  PREFIX pav: <http://purl.org/pav/>
+  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  if (currentUser.hasLimitedRole) {
+    queryString += ' ?confidentialityLevel'
+  }
+  queryString += `
+  WHERE {
+      ?subcase a dossier:Procedurestap ;
+          mu:uuid ${sparqlEscapeString(subcaseId)} .
+      ?submissionActivity a ext:Indieningsactiviteit ;
+          ext:indieningVindtPlaatsTijdens ?subcase ;
+          prov:generated ?document .
+      ?document a dossier:Stuk ;
+          dct:title ?documentName .
+      FILTER NOT EXISTS { [] pav:previousVersion ?document }
+      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+
+  if (currentUser.hasLimitedRole) {
+    queryString += `
+      ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
+  }
+  if (extensions.length) {
+    queryString += `
+    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension).toLowerCase()).join(" ")} ${extensions.map(extension => sparqlEscapeString(extension).toUpperCase()).join(" ")} }`
+  }
+  queryString += `
+      ?file a nfo:FileDataObject ;
+          nfo:fileName ?name ;
+          dbpedia:fileExtension ?extension .
+  }`;
+  const data = await query(queryString);
+  return parseSparqlResults(data);
+}
+
 export {
   fetchFilesFromAgenda,
   fetchFilesFromAgendaByMandatees,
   fetchDecisionsByMandatees,
   fetchDecisionsFromAgenda,
   fetchAreDecisionsReleased,
+  fetchFilesFromAgendaitem,
+  fetchFilesFromCases,
+  fetchFilesFromSubcases
 };
