@@ -312,6 +312,8 @@ const fetchFilesFromAgendaitem = async(agendaitemId, currentUser, extensions) =>
 }
 
 const fetchFilesFromCases = async(caseId, currentUser, extensions) => {
+  // We wanted to use the relation of case.pieces, but move subcase does not trigger a sync of those documents
+  // ?case dossier:Dossier.bestaatUit ?document .
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -322,6 +324,7 @@ const fetchFilesFromCases = async(caseId, currentUser, extensions) => {
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX pav: <http://purl.org/pav/>
+  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
   SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
   if (currentUser.hasLimitedRole) {
@@ -330,8 +333,13 @@ const fetchFilesFromCases = async(caseId, currentUser, extensions) => {
   queryString += `
   WHERE {
       ?case a dossier:Dossier ;
-          mu:uuid ${sparqlEscapeString(caseId)} ;
-          dossier:Dossier.bestaatUit ?document .
+          mu:uuid ${sparqlEscapeString(caseId)} .
+      ?case dossier:Dossier.isNeerslagVan ?decisionmakingFlow .
+      ?decisionmakingFlow dossier:doorloopt ?subcase .
+      ?subcase a dossier:Procedurestap .
+      ?submissionActivity a ext:Indieningsactiviteit ;
+          ext:indieningVindtPlaatsTijdens ?subcase ;
+          prov:generated ?document .
       ?document a dossier:Stuk ;
           dct:title ?documentName .
       FILTER NOT EXISTS { [] pav:previousVersion ?document }
