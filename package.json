@@ -1,6 +1,6 @@
 {
   "name": "file-bundling-job-creation-service",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Microservice to create a file-bulding job for a set of Kaleidos files",
   "main": "app.js",
   "scripts": {
