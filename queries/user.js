@@ -2,7 +2,7 @@ import { sparqlEscapeUri } from 'mu';
 import { querySudo as query } from '@lblod/mu-auth-sudo';
 import { parseSparqlResults } from './util';
 import { getMandateesForDocument } from './document';
-import { LIMITED_ACCESS_ROLES, ACCESS_LEVEL_CONFIDENTIAL } from '../config';
+import { LIMITED_ACCESS_ROLES, ACCESS_LEVEL_CONFIDENTIAL, DEBUG_LOG_ACCESS_ROLES } from '../config';
 
 
 async function fetchCurrentUser (sessionUri) {
@@ -11,10 +11,13 @@ async function fetchCurrentUser (sessionUri) {
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 PREFIX org: <http://www.w3.org/ns/org#>
 PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
-  SELECT DISTINCT ?user ?membership ?role ?organization ?mandatee WHERE {
+  SELECT DISTINCT ?user ?membership ?role ?organization ?mandatee ?impersonatedRole WHERE {
     GRAPH <http://mu.semte.ch/graphs/sessions> {
-      ${sparqlEscapeUri(sessionUri)} session:account ?account
+      ${sparqlEscapeUri(sessionUri)} session:account ?account ;
+                                     ext:sessionMembership ?membership .
+      OPTIONAL { ${sparqlEscapeUri(sessionUri)} ext:impersonatedRole ?impersonatedRole . }
     }
     VALUES ?g { <http://mu.semte.ch/graphs/public> <http://mu.semte.ch/graphs/system/users> }
     GRAPH ?g {
@@ -39,6 +42,7 @@ PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
     };
     for (let result of parsedResults) {
       user.user = result.user; // this will always be the same
+      user.impersonatedRole = result.impersonatedRole; // this will always be the same
       if (!user.memberships.find(membership => membership.membership === result.membership)) {
         user.memberships.push({
           membership: result.membership,
@@ -50,9 +54,26 @@ PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
         user.linkedMandatees.push(result.mandatee);
       }
     }
+    if (DEBUG_LOG_ACCESS_ROLES && user.impersonatedRole) {
+      console.log('User has impersonatedRole:');
+      console.log(user.impersonatedRole);
+    }
+    if (user.impersonatedRole && LIMITED_ACCESS_ROLES.indexOf(user.impersonatedRole) > -1) {
+      user.hasLimitedRole = true;
+      if (DEBUG_LOG_ACCESS_ROLES) {
+        console.log('User has impersonatedRole with limited access');
+      }
+    }
     for (let i = 0; !user.hasLimitedRole && i < user.memberships.length; i++) {
+      if (DEBUG_LOG_ACCESS_ROLES) {
+        console.log('User role:');
+        console.log(user.memberships[i].role);
+      }
       if (LIMITED_ACCESS_ROLES.indexOf(user.memberships[i].role) > -1) {
         user.hasLimitedRole = true;
+        if (DEBUG_LOG_ACCESS_ROLES) {
+          console.log('User has real role with limited access');
+        }
       }
     }
     return user;

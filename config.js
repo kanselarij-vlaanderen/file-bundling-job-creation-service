@@ -11,6 +11,12 @@ const DECISION_RESULT_CODES_LIST = [
   "http://themis.vlaanderen.be/id/concept/beslissing-resultaatcodes/453a36e8-6fbd-45d3-b800-ec96e59f273b"
 ];
 
+function isTruthy(value) {
+  return [true, 'true', 1, '1', 'yes', 'Y', 'on'].includes(value);
+}
+
+const DEBUG_LOG_ACCESS_ROLES = isTruthy(process.env.DEBUG_LOG_ACCESS_ROLES);
+
 module.exports = {
   RESOURCE_BASE,
   RDF_JOB_TYPE,
@@ -18,5 +24,6 @@ module.exports = {
   LIMITED_ACCESS_ROLES,
   ACCESS_LEVEL_CONFIDENTIAL,
   DECISION_RESULT_CODES_LIST,
-  EXTENSION_PDF
+  EXTENSION_PDF,
+  DEBUG_LOG_ACCESS_ROLES
 };
