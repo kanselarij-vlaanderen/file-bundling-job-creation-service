@@ -15,7 +15,8 @@ PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
   SELECT DISTINCT ?user ?membership ?role ?organization ?mandatee ?impersonatedRole WHERE {
     GRAPH <http://mu.semte.ch/graphs/sessions> {
-      ${sparqlEscapeUri(sessionUri)} session:account ?account .
+      ${sparqlEscapeUri(sessionUri)} session:account ?account ;
+                                     ext:sessionMembership ?membership .
       OPTIONAL { ${sparqlEscapeUri(sessionUri)} ext:impersonatedRole ?impersonatedRole . }
     }
     VALUES ?g { <http://mu.semte.ch/graphs/public> <http://mu.semte.ch/graphs/system/users> }
