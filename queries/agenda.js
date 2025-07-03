@@ -125,7 +125,7 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
   return parseSparqlResults(data);
 };
 
-const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser, extensions) => {
+const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -180,10 +180,6 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser, ext
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
   }
-  if (extensions.length) {
-    queryString += `
-    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension).toLowerCase()).join(" ")} ${extensions.map(extension => sparqlEscapeString(extension).toUpperCase()).join(" ")} }`
-  }
   queryString += `
       ?file a nfo:FileDataObject ;
           nfo:fileName ?name ;
@@ -193,7 +189,7 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser, ext
   return parseSparqlResults(data);
 };
 
-const fetchDecisionsFromAgenda = async (agendaId, currentUser, extensions) => {
+const fetchDecisionsFromAgenda = async (agendaId, currentUser) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -232,10 +228,6 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser, extensions) => {
   if (currentUser.hasLimitedRole) {
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
-  }
-  if (extensions.length) {
-    queryString += `
-    VALUES ?extension { ${extensions.map(extension => sparqlEscapeString(extension).toLowerCase()).join(" ")} ${extensions.map(extension => sparqlEscapeString(extension).toUpperCase()).join(" ")} }`
   }
   queryString += `
       ?file a nfo:FileDataObject ;
