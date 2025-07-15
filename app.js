@@ -20,20 +20,20 @@ app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, 
   try {
     const mandateeIdsString = req.query.mandateeIds;
     const extensions = req.query.pdfOnly === 'true' ? [EXTENSION_PDF] : [] ;
-    let decisions = req.query.decisions === 'true';
+    const decisions = req.query.decisions === 'true';
     let files;
     const currentUser = await fetchCurrentUser(req.headers['mu-session-id']);
     const areDecisionsReleased = await fetchAreDecisionsReleased(req.params.agenda_id);
     if (mandateeIdsString) {
       const mandateeIds = mandateeIdsString.split(',');
       if (decisions){
-        files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds, currentUser, extensions)
+        files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds, currentUser);
       } else {
         files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds, currentUser, extensions, areDecisionsReleased);
       }
     } else {
       if (decisions){
-        files = await fetchDecisionsFromAgenda(req.params.agenda_id, currentUser, extensions);
+        files = await fetchDecisionsFromAgenda(req.params.agenda_id, currentUser);
       } else {
         files = await fetchFilesFromAgenda(req.params.agenda_id, currentUser, extensions, areDecisionsReleased);
       }
