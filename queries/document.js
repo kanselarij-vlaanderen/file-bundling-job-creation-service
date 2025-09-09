@@ -38,6 +38,38 @@ async function renameFileFromDocument (doc, file, newFileName) {
   await updateSudo(q);
 }
 
+async function renameFlattenedPieceFromDocument(doc, file, newPieceName) {
+  /*
+   * Note that this query renames pieces in all graphs, while they only really need to be in one.
+   * Renaming the pieces in all graphs however, keeps distributed data in sync. It also isn't a lost effort, since
+   * renaming will have to be done anyway when someone with access to another graph requests a file-bundling-job.
+   */
+  const q = `
+  PREFIX dossier: <https://data.vlaanderen.be/ns/dossier#>
+  PREFIX prov: <http://www.w3.org/ns/prov#>
+  PREFIX dct: <http://purl.org/dc/terms/>
+
+  DELETE {
+      GRAPH ?g {
+          ${sparqlEscapeUri(doc)} dct:title ?pieceName .
+      }
+  }
+  INSERT {
+      GRAPH ?g {
+          ${sparqlEscapeUri(doc)} dct:title ${sparqlEscapeString(newPieceName)} .
+      }
+  }
+  WHERE {
+      GRAPH ?g {
+          ${sparqlEscapeUri(doc)} a dossier:Stuk ;
+            prov:value ${sparqlEscapeUri(file)} ;
+            dct:title ?pieceName .
+          FILTER (?pieceName != ${sparqlEscapeString(newPieceName)})
+      }
+  }`;
+  await updateSudo(q);
+}
+
 
 async function getMandateesForDocument (documentUri, isDecision) {
   if (!documentUri) {
@@ -68,5 +100,6 @@ SELECT DISTINCT ?mandatee WHERE {
 
 export {
   renameFileFromDocument,
-  getMandateesForDocument
+  getMandateesForDocument,
+  renameFlattenedPieceFromDocument
 };
