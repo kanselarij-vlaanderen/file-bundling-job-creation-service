@@ -1,31 +1,31 @@
 import { query, update, uuid as generateUuid, sparqlEscapeString, sparqlEscapeUri, sparqlEscapeDateTime } from 'mu';
 import { updateSudo } from '@lblod/mu-auth-sudo';
-import { RESOURCE_BASE, RDF_JOB_TYPE } from '../config';
+import { RESOURCE_BASE, JOB } from '../config';
 import { createCollection } from '../lib/collection';
 import { parseSparqlResults } from './util';
 
-// const SCHEDULED = 'scheduled';
-const RUNNING = 'http://vocab.deri.ie/cogs#Running';
-const SUCCESS = 'http://vocab.deri.ie/cogs#Success';
-const FAIL = 'http://vocab.deri.ie/cogs#Fail';
-
 async function createJob () {
   const uuid = generateUuid();
+  // this is a bit of a hack
+  // we create a job with BUSY status and return the job id to frontend first
+  // after that we create a collection and rename files if needed.
+  // then we set the status to "SCHEDULED" so the file-bundling-service can start bundling the files
+  // the status update on the job is received via deltas
   const job = {
-    uri: RESOURCE_BASE + `/file-bundling-jobs/${uuid}`,
+    uri: RESOURCE_BASE + `/${JOB.JSONAPI_JOB_TYPE}/${uuid}`,
     id: uuid,
-    status: RUNNING,
+    status: JOB.STATUSES.BUSY,
     created: new Date()
   };
   const queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
   PREFIX dct: <http://purl.org/dc/terms/>
   PREFIX cogs: <http://vocab.deri.ie/cogs#>
+  PREFIX adms: <http://www.w3.org/ns/adms#>
 
   INSERT DATA {
-      ${sparqlEscapeUri(job.uri)} a cogs:Job , ${sparqlEscapeUri(RDF_JOB_TYPE)} ;
-          ext:status ${sparqlEscapeUri(job.status)} ;
+      ${sparqlEscapeUri(job.uri)} a cogs:Job , ${sparqlEscapeUri(JOB.RDF_TYPE)} ;
+          adms:status ${sparqlEscapeUri(job.status)} ;
           mu:uuid ${sparqlEscapeString(job.id)} ;
           dct:created ${sparqlEscapeDateTime(job.created)} .
   }`;
@@ -51,51 +51,55 @@ async function insertAndattachCollectionToJob (job, collectionMembers) {
   }
   WHERE {
       GRAPH ?g {
-          ${sparqlEscapeUri(job.uri)} a ${sparqlEscapeUri(RDF_JOB_TYPE)} .
+          ${sparqlEscapeUri(job.uri)} a ${sparqlEscapeUri(JOB.RDF_TYPE)} .
       }
   }`;
   await updateSudo(queryString);
   return job;
 }
 
-async function updateJobStatus (uri, status) {
+async function updateJobStatus (uri, status, errorMessage) {
   const time = new Date();
   let timePred;
-  if (status === SUCCESS || status === FAIL) { // final statusses
+  if (status === JOB.STATUSES.SUCCESS || status === JOB.STATUSES.FAILED) { // final statuses
     timePred = 'http://www.w3.org/ns/prov#endedAtTime';
   } else {
     timePred = 'http://www.w3.org/ns/prov#startedAtTime';
   }
-  const escapedUri = sparqlEscapeUri(uri);
+  // no prov:startedAtTime on setting scheduled status
   let queryString = `
-PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX adms: <http://www.w3.org/ns/adms#>
+PREFIX schema: <http://schema.org/>
 
 DELETE {
     GRAPH ?g {
-      ${escapedUri} ext:status ?status .`;
-  if (status) {
-    queryString += `
-      ${escapedUri} ${sparqlEscapeUri(timePred)} ?time .`;
-  }
-  queryString += `
+        ${sparqlEscapeUri(uri)} adms:status ?status ;
+            ${sparqlEscapeUri(timePred)} ?time ;
+            schema:error ?message .
     }
-}`;
-  if (status) {
-    queryString += `
+}
 INSERT {
     GRAPH ?g {
-        ${escapedUri} ext:status ${sparqlEscapeUri(status)} ;
-            ${sparqlEscapeUri(timePred)} ${sparqlEscapeDateTime(time)} .
+        ${sparqlEscapeUri(uri)} adms:status ${sparqlEscapeUri(status)} .
+        ${
+          status !== JOB.STATUSES.SCHEDULED
+            ? `${sparqlEscapeUri(uri)} ${sparqlEscapeUri(timePred)} ${sparqlEscapeDateTime(time)} .`
+            : ""
+        }
+        ${
+          errorMessage
+            ? `${sparqlEscapeUri(uri)} schema:error ${sparqlEscapeString(errorMessage)} .`
+            : ""
+        }
     }
-}`;
-  }
-  queryString += `
+}
 WHERE {
     GRAPH ?g {
-        ${escapedUri} a ${sparqlEscapeUri(RDF_JOB_TYPE)} .
-        OPTIONAL { ${escapedUri} ext:status ?status }
-        OPTIONAL { ${escapedUri} ${sparqlEscapeUri(timePred)} ?time }
+        ${sparqlEscapeUri(uri)} a ${sparqlEscapeUri(JOB.RDF_TYPE)} .
+        OPTIONAL { ${sparqlEscapeUri(uri)} adms:status ?status }
+        OPTIONAL { ${sparqlEscapeUri(uri)} ${sparqlEscapeUri(timePred)} ?time }
+        OPTIONAL { ${sparqlEscapeUri(uri)} schema:error ?message }
     }
 }`;
   await updateSudo(queryString);
@@ -105,19 +109,21 @@ async function findJobUsingCollection (collection) {
   const queryString = `
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
-  PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
   PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX adms: <http://www.w3.org/ns/adms#>
+  PREFIX schema: <http://schema.org/>
 
-  SELECT (?job AS ?uri) (?uuid as ?id) ?generated ?status ?created ?started ?ended WHERE {
+  SELECT (?job AS ?uri) (?uuid as ?id) ?generated ?status ?created ?started ?ended ?message WHERE {
       ${sparqlEscapeUri(collection)} a prov:Collection .
-      ?job a ${sparqlEscapeUri(RDF_JOB_TYPE)} ;
+      ?job a ${sparqlEscapeUri(JOB.RDF_TYPE)} ;
           mu:uuid ?uuid ;
           prov:used ${sparqlEscapeUri(collection)} .
-      OPTIONAL { ?job ext:status ?status }
+      OPTIONAL { ?job adms:status ?status }
       OPTIONAL { ?job prov:generated ?generated }
       OPTIONAL { ?job dct:created ?created }
       OPTIONAL { ?job prov:startedAtTime ?started }
       OPTIONAL { ?job prov:endedAtTime ?ended }
+      OPTIONAL { ?job schema:error ?message }
   }`;
   const results = await query(queryString); // NO SUDO!
   const parsedResults = parseSparqlResults(results);
@@ -132,6 +138,5 @@ export {
   createJob,
   insertAndattachCollectionToJob,
   updateJobStatus,
-  RUNNING, SUCCESS, FAIL,
   findJobUsingCollection
 };
