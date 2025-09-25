@@ -66,6 +66,7 @@ async function updateJobStatus (uri, status, errorMessage) {
   } else {
     timePred = 'http://www.w3.org/ns/prov#startedAtTime';
   }
+  // no prov:startedAtTime on setting scheduled status
   let queryString = `
 PREFIX cogs: <http://vocab.deri.ie/cogs#>
 PREFIX adms: <http://www.w3.org/ns/adms#>
@@ -77,9 +78,7 @@ DELETE {
             ${sparqlEscapeUri(timePred)} ?time ;
             schema:error ?message .
     }
-}`;
-// no prov:startedAtTime on setting scheduled status
-    queryString += `
+}
 INSERT {
     GRAPH ?g {
         ${sparqlEscapeUri(uri)} adms:status ${sparqlEscapeUri(status)} .
