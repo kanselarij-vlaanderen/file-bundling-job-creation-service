@@ -13,8 +13,9 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisi
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX pav: <http://purl.org/pav/>
+  PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?originalDocumentName ?flattenedDocumentName`
   if (currentUser.hasLimitedRole) {
     queryString += ' ?confidentialityLevel'
   }
@@ -24,12 +25,20 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisi
           mu:uuid ${sparqlEscapeString(agendaId)} ;
           dct:hasPart ?agendaitem .
       ?agendaitem a besluit:Agendapunt ;
-          besluitvorming:geagendeerdStuk ?document .
-      ?document a dossier:Stuk ;
-          dct:title ?documentName .
-      OPTIONAL { ?nextDocument pav:previousVersion ?document . }
+          besluitvorming:geagendeerdStuk ?originalDocument .
+      ?originalDocument a dossier:Stuk ;
+          dct:title ?originalDocumentName .
+      OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
       FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
-      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      OPTIONAL {
+          ?originalDocument sign:getekendStukKopie ?flattenedDocument .
+          ?flattenedDocument prov:value ?flattenedFile .
+          ?flattenedDocument dct:title ?flattenedDocumentName .
+      }
+      BIND(COALESCE(?flattenedDocument , ?originalDocument) AS ?document)
+      BIND(COALESCE(?flattenedFile , ?originalFile) AS ?file)
+  `
   if (areDecisionsReleased) {
     queryString += `
       OPTIONAL {
@@ -69,16 +78,17 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
   PREFIX pav: <http://purl.org/pav/>
+  PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?originalDocumentName ?flattenedDocumentName`
   if (currentUser.hasLimitedRole) {
     queryString += ' ?confidentialityLevel'
   }
   queryString += `
   WHERE {
       ?agendaitem a besluit:Agendapunt ;
-          besluitvorming:geagendeerdStuk ?document .
-      OPTIONAL { ?nextDocument pav:previousVersion ?document . }
+          besluitvorming:geagendeerdStuk ?originalDocument .
+      OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
       FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
       {
         ?agenda a besluitvorming:Agenda ;
@@ -95,9 +105,17 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
           dct:hasPart ?agendaitem .
         FILTER NOT EXISTS { ?agendaitem ext:heeftBevoegdeVoorAgendapunt ?mandatee . }
       }
-      ?document a dossier:Stuk ;
-          dct:title ?documentName .
-      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+      ?originalDocument a dossier:Stuk ;
+          dct:title ?originalDocumentName .
+      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      OPTIONAL {
+          ?originalDocument sign:getekendStukKopie ?flattenedDocument .
+          ?flattenedDocument prov:value ?flattenedFile .
+          ?flattenedDocument dct:title ?flattenedDocumentName .
+      }
+      BIND(COALESCE(?flattenedDocument , ?originalDocument) AS ?document)
+      BIND(COALESCE(?flattenedFile , ?originalFile) AS ?file)
+      `
   if (areDecisionsReleased) {
     queryString += `
       OPTIONAL {
@@ -138,7 +156,7 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser) => 
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
   PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?originalDocumentName ?flattenedDocumentName`
   if (currentUser.hasLimitedRole) {
     queryString += ' ?confidentialityLevel'
   }
@@ -170,12 +188,13 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser) => 
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
+          ?flattenedDocument dct:title ?flattenedDocumentName .
       }
-      BIND(IF(BOUND(?flattenedDocument), ?flattenedDocument, ?originalDocument) AS ?document)
-      BIND(IF(BOUND(?flattenedFile), ?flattenedFile , ?originalFile) AS ?file)
+      BIND(COALESCE(?flattenedDocument , ?originalDocument) AS ?document)
+      BIND(COALESCE(?flattenedFile , ?originalFile) AS ?file)
 
-      ?document a dossier:Stuk ;
-          dct:title ?documentName .`
+      ?originalDocument a dossier:Stuk ;
+          dct:title ?originalDocumentName .`
   if (currentUser.hasLimitedRole) {
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
@@ -202,7 +221,7 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser) => {
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
   PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?originalDocumentName ?flattenedDocumentName`
   if (currentUser.hasLimitedRole) {
     queryString += ' ?confidentialityLevel'
   }
@@ -218,13 +237,13 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser) => {
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
+          ?flattenedDocument dct:title ?flattenedDocumentName .
       }
-
       BIND(COALESCE(?flattenedDocument , ?originalDocument) AS ?document)
       BIND(COALESCE(?flattenedFile , ?originalFile) AS ?file)
 
-      ?document a dossier:Stuk ;
-          dct:title ?documentName . `
+      ?originalDocument a dossier:Stuk ;
+          dct:title ?originalDocumentName . `
   if (currentUser.hasLimitedRole) {
     queryString += `
       ?document besluitvorming:vertrouwelijkheidsniveau ?confidentialityLevel .`
@@ -270,8 +289,9 @@ const fetchFilesFromAgendaitem = async(agendaitemId, currentUser, extensions) =>
   PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX pav: <http://purl.org/pav/>
+  PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?originalDocumentName ?flattenedDocumentName`
   if (currentUser.hasLimitedRole) {
     queryString += ' ?confidentialityLevel'
   }
@@ -279,12 +299,20 @@ const fetchFilesFromAgendaitem = async(agendaitemId, currentUser, extensions) =>
   WHERE {
       ?agendaitem a besluit:Agendapunt ;
           mu:uuid ${sparqlEscapeString(agendaitemId)} ;
-          besluitvorming:geagendeerdStuk ?document .
-      ?document a dossier:Stuk ;
-          dct:title ?documentName .
-      OPTIONAL { ?nextDocument pav:previousVersion ?document . }
+          besluitvorming:geagendeerdStuk ?originalDocument .
+      ?originalDocument a dossier:Stuk ;
+          dct:title ?originalDocumentName .
+      OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
       FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
-      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      OPTIONAL {
+          ?originalDocument sign:getekendStukKopie ?flattenedDocument .
+          ?flattenedDocument prov:value ?flattenedFile .
+          ?flattenedDocument dct:title ?flattenedDocumentName .
+      }
+      BIND(COALESCE(?flattenedDocument , ?originalDocument) AS ?document)
+      BIND(COALESCE(?flattenedFile , ?originalFile) AS ?file)
+      `
 
   if (currentUser.hasLimitedRole) {
     queryString += `
@@ -317,8 +345,9 @@ const fetchFilesFromCases = async(caseId, currentUser, extensions) => {
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX pav: <http://purl.org/pav/>
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+  PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?originalDocumentName ?flattenedDocumentName`
   if (currentUser.hasLimitedRole) {
     queryString += ' ?confidentialityLevel'
   }
@@ -331,11 +360,19 @@ const fetchFilesFromCases = async(caseId, currentUser, extensions) => {
       ?subcase a dossier:Procedurestap .
       ?submissionActivity a ext:Indieningsactiviteit ;
           ext:indieningVindtPlaatsTijdens ?subcase ;
-          prov:generated ?document .
-      ?document a dossier:Stuk ;
-          dct:title ?documentName .
-      FILTER NOT EXISTS { [] pav:previousVersion ?document }
-      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+          prov:generated ?originalDocument .
+      ?originalDocument a dossier:Stuk ;
+          dct:title ?originalDocumentName .
+      FILTER NOT EXISTS { [] pav:previousVersion ?originalDocument }
+      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      OPTIONAL {
+          ?originalDocument sign:getekendStukKopie ?flattenedDocument .
+          ?flattenedDocument prov:value ?flattenedFile .
+          ?flattenedDocument dct:title ?flattenedDocumentName .
+      }
+      BIND(COALESCE(?flattenedDocument , ?originalDocument) AS ?document)
+      BIND(COALESCE(?flattenedFile , ?originalFile) AS ?file)
+      `
 
   if (currentUser.hasLimitedRole) {
     queryString += `
@@ -366,8 +403,9 @@ const fetchFilesFromSubcases = async(subcaseId, currentUser, extensions) => {
   PREFIX prov: <http://www.w3.org/ns/prov#>
   PREFIX pav: <http://purl.org/pav/>
   PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+  PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
 
-  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?documentName`
+  SELECT DISTINCT (?file AS ?uri) ?name ?extension ?document ?originalDocumentName ?flattenedDocumentName`
   if (currentUser.hasLimitedRole) {
     queryString += ' ?confidentialityLevel'
   }
@@ -377,11 +415,19 @@ const fetchFilesFromSubcases = async(subcaseId, currentUser, extensions) => {
           mu:uuid ${sparqlEscapeString(subcaseId)} .
       ?submissionActivity a ext:Indieningsactiviteit ;
           ext:indieningVindtPlaatsTijdens ?subcase ;
-          prov:generated ?document .
-      ?document a dossier:Stuk ;
-          dct:title ?documentName .
-      FILTER NOT EXISTS { [] pav:previousVersion ?document }
-      ?document prov:value / ^prov:hadPrimarySource? ?file . `
+          prov:generated ?originalDocument .
+      ?originalDocument a dossier:Stuk ;
+          dct:title ?originalDocumentName .
+      FILTER NOT EXISTS { [] pav:previousVersion ?originalDocument }
+      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile . 
+      OPTIONAL {
+          ?originalDocument sign:getekendStukKopie ?flattenedDocument .
+          ?flattenedDocument prov:value ?flattenedFile .
+          ?flattenedDocument dct:title ?flattenedDocumentName .
+      }
+      BIND(COALESCE(?flattenedDocument , ?originalDocument) AS ?document)
+      BIND(COALESCE(?flattenedFile , ?originalFile) AS ?file)
+      `
 
   if (currentUser.hasLimitedRole) {
     queryString += `
