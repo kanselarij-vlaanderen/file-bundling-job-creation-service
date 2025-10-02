@@ -30,7 +30,11 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisi
           dct:title ?originalDocumentName .
       OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
       FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
@@ -107,7 +111,11 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
       }
       ?originalDocument a dossier:Stuk ;
           dct:title ?originalDocumentName .
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
@@ -164,7 +172,11 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser) => 
   WHERE {
       ?agendaitem a besluit:Agendapunt ;
           ^dct:subject/besluitvorming:heeftBeslissing/^besluitvorming:beschrijft ?originalDocument .
-          ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+          {
+              ?originalDocument prov:value ?originalFile .
+          } UNION {
+              ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+          }
       {
         select ?agendaitem WHERE {
           {
@@ -232,7 +244,11 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser) => {
           dct:hasPart ?agendaitem .
       ?agendaitem a besluit:Agendapunt ;
           ^dct:subject/besluitvorming:heeftBeslissing/^besluitvorming:beschrijft ?originalDocument .
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
 
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
@@ -304,7 +320,11 @@ const fetchFilesFromAgendaitem = async(agendaitemId, currentUser, extensions) =>
           dct:title ?originalDocumentName .
       OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
       FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
@@ -364,7 +384,11 @@ const fetchFilesFromCases = async(caseId, currentUser, extensions) => {
       ?originalDocument a dossier:Stuk ;
           dct:title ?originalDocumentName .
       FILTER NOT EXISTS { [] pav:previousVersion ?originalDocument }
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
@@ -419,7 +443,11 @@ const fetchFilesFromSubcases = async(subcaseId, currentUser, extensions) => {
       ?originalDocument a dossier:Stuk ;
           dct:title ?originalDocumentName .
       FILTER NOT EXISTS { [] pav:previousVersion ?originalDocument }
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile . 
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
