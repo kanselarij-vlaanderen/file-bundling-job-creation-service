@@ -103,7 +103,7 @@ async function addSourceFilesForSignedPdfs(files) {
   if (files.length === 0)
     return [];
   let filesToReturn = [...files];
-  const FILE_SOURCE_QUERY_BATCH_SIZE = 2; // avoid the query getting too long for large agendas
+  const FILE_SOURCE_QUERY_BATCH_SIZE = 20; // avoid the query getting too long for large agendas
   const nrOfBatches = Math.ceil((1.0 * files.length) / FILE_SOURCE_QUERY_BATCH_SIZE);
   for (let i = 0; i < nrOfBatches; i++) {
     let filesInBatch = files.slice(i*FILE_SOURCE_QUERY_BATCH_SIZE, i*FILE_SOURCE_QUERY_BATCH_SIZE + FILE_SOURCE_QUERY_BATCH_SIZE);
