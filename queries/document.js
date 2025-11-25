@@ -98,8 +98,44 @@ SELECT DISTINCT ?mandatee WHERE {
   return parseSparqlResults(data);
 }
 
+/* Returns the array of files passed, plus any source files for the signed PDFs, if any */
+async function addSourceFilesForSignedPdfs(files) {
+  if (files.length === 0)
+    return [];
+  let filesToReturn = [...files];
+  const FILE_SOURCE_QUERY_BATCH_SIZE = 2; // avoid the query getting too long for large agendas
+  const nrOfBatches = Math.ceil((1.0 * files.length) / FILE_SOURCE_QUERY_BATCH_SIZE);
+  for (let i = 0; i < nrOfBatches; i++) {
+    let filesInBatch = files.slice(i*FILE_SOURCE_QUERY_BATCH_SIZE, i*FILE_SOURCE_QUERY_BATCH_SIZE + FILE_SOURCE_QUERY_BATCH_SIZE);
+    let queryString = `PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX prov: <http://www.w3.org/ns/prov#>
+    PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+    PREFIX dbpedia: <http://dbpedia.org/ontology/>
+    PREFIX sign: <http://mu.semte.ch/vocabularies/ext/handtekenen/>
+
+      SELECT DISTINCT ?uri ?name ?extension ?document ?originalDocumentName WHERE {
+          VALUES (?file ?originalDocumentName) {
+            ${filesInBatch.map((f) =>{
+              return `(${sparqlEscapeUri(f.uri)} ${sparqlEscapeString(f.originalDocumentName)})`
+            }).join(' ')}
+          }
+          ?file ^prov:value ?piece  .
+          ?piece ^sign:getekendStukKopie ?document .
+          ?document prov:value ?uri .
+          ?uri nfo:fileName ?name ;
+            dbpedia:fileExtension ?extension .
+          ?uri ^prov:hadPrimarySource ?derived .
+      }`; // we only want the source files
+    const data = await query(queryString);
+    const sourceFiles = parseSparqlResults(data);
+    filesToReturn = [...filesToReturn, ...sourceFiles];
+  }
+  return filesToReturn;
+}
+
 export {
   renameFileFromDocument,
   getMandateesForDocument,
-  renameFlattenedPieceFromDocument
+  renameFlattenedPieceFromDocument,
+  addSourceFilesForSignedPdfs
 };

@@ -12,6 +12,7 @@ import {
 } from './queries/agenda';
 import { createJob, insertAndattachCollectionToJob, updateJobStatus, findJobUsingCollection } from './queries/job';
 import { findCollectionByMembers } from './queries/collection';
+import { addSourceFilesForSignedPdfs } from './queries/document';
 import { fetchCurrentUser, filterByConfidentiality } from './queries/user';
 import { overwriteFilenames } from './lib/overwrite-filename';
 import { JSONAPI_JOB_TYPE, EXTENSION_PDF } from './config';
@@ -39,6 +40,9 @@ app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, 
       }
     }
     files = await filterByConfidentiality(files, currentUser, decisions);
+    if (req.query.pdfOnly !== 'true') {
+      files = await addSourceFilesForSignedPdfs(files);
+    }
     await createBundlingJobAndRespondWithPayload(files, res);
   } catch (err) {
     console.trace(err);
@@ -54,6 +58,9 @@ app.post('/agendaitems/:agendaitem_id/documents/files/archive', async (req, res,
     const currentUser = await fetchCurrentUser(req.headers['mu-session-id']);
     let files = await fetchFilesFromAgendaitem(req.params.agendaitem_id, currentUser, extensions);
     files = await filterByConfidentiality(files, currentUser);
+    if (req.query.pdfOnly !== 'true') {
+      files = await addSourceFilesForSignedPdfs(files);
+    }
     await createBundlingJobAndRespondWithPayload(files, res);
   } catch (err) {
     console.trace(err);
@@ -69,6 +76,9 @@ app.post('/cases/:case_id/documents/files/archive', async (req, res, next) => {
     const currentUser = await fetchCurrentUser(req.headers['mu-session-id']);
     let files = await fetchFilesFromCases(req.params.case_id, currentUser, extensions);
     files = await filterByConfidentiality(files, currentUser);
+    if (req.query.pdfOnly !== 'true') {
+      files = await addSourceFilesForSignedPdfs(files);
+    }
     await createBundlingJobAndRespondWithPayload(files, res);
   } catch (err) {
     console.trace(err);
@@ -84,6 +94,9 @@ app.post('/subcases/:subcase_id/documents/files/archive', async (req, res, next)
     const currentUser = await fetchCurrentUser(req.headers['mu-session-id']);
     let files = await fetchFilesFromSubcases(req.params.subcase_id, currentUser, extensions);
     files = await filterByConfidentiality(files, currentUser);
+    if (req.query.pdfOnly !== 'true') {
+      files = await addSourceFilesForSignedPdfs(files);
+    }
     await createBundlingJobAndRespondWithPayload(files, res);
   } catch (err) {
     console.trace(err);
