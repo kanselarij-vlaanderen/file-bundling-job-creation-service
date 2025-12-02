@@ -22,6 +22,7 @@ app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, 
     const mandateeIdsString = req.query.mandateeIds;
     const extensions = req.query.pdfOnly === 'true' ? [EXTENSION_PDF] : [] ;
     const decisions = req.query.decisions === 'true';
+    const currentAgendaOnly = req.query.currentAgendaOnly === 'true';
     let files;
     const currentUser = await fetchCurrentUser(req.headers['mu-session-id']);
     const areDecisionsReleased = await fetchAreDecisionsReleased(req.params.agenda_id);
@@ -30,13 +31,13 @@ app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, 
       if (decisions){
         files = await fetchDecisionsByMandatees(req.params.agenda_id, mandateeIds, currentUser);
       } else {
-        files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds, currentUser, extensions, areDecisionsReleased);
+        files = await fetchFilesFromAgendaByMandatees(req.params.agenda_id, mandateeIds, currentUser, extensions, areDecisionsReleased, currentAgendaOnly);
       }
     } else {
       if (decisions){
         files = await fetchDecisionsFromAgenda(req.params.agenda_id, currentUser);
       } else {
-        files = await fetchFilesFromAgenda(req.params.agenda_id, currentUser, extensions, areDecisionsReleased);
+        files = await fetchFilesFromAgenda(req.params.agenda_id, currentUser, extensions, areDecisionsReleased, currentAgendaOnly);
       }
     }
     files = await filterByConfidentiality(files, currentUser, decisions);
