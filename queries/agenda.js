@@ -2,7 +2,7 @@ import { sparqlEscapeString, sparqlEscapeUri, query } from 'mu';
 import { parseSparqlResults } from './util';
 import { DECISION_RESULT_CODES_LIST } from '../config';
 
-const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisionsReleased, currentAgendaOnly) => {
+const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisionsReleased, newDocumentsOnly) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -30,7 +30,7 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisi
           dct:title ?originalDocumentName .
       OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
       FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . } `
-  if (currentAgendaOnly) {
+  if (newDocumentsOnly) {
     queryString += `
       OPTIONAL { ?agendaitem prov:wasRevisionOf ?previousAgendaitem . }
       FILTER NOT EXISTS { ?previousAgendaitem besluitvorming:geagendeerdStuk ?originalDocument . }
@@ -77,7 +77,7 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisi
   return parseSparqlResults(data);
 };
 
-const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUser, extensions, areDecisionsReleased, currentAgendaOnly) => {
+const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUser, extensions, areDecisionsReleased, newDocumentsOnly) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -101,7 +101,7 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
           besluitvorming:geagendeerdStuk ?originalDocument .
       OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
       FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }`
-  if (currentAgendaOnly) {
+  if (newDocumentsOnly) {
     queryString += `
       OPTIONAL { ?agendaitem prov:wasRevisionOf ?previousAgendaitem . }
       FILTER NOT EXISTS { ?previousAgendaitem besluitvorming:geagendeerdStuk ?originalDocument . }
