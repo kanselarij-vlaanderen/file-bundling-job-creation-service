@@ -15,7 +15,7 @@ import { findCollectionByMembers } from './queries/collection';
 import { addSourceFilesForSignedPdfs } from './queries/document';
 import { fetchCurrentUser, filterByConfidentiality } from './queries/user';
 import { overwriteFilenames } from './lib/overwrite-filename';
-import { JSONAPI_JOB_TYPE, EXTENSION_PDF } from './config';
+import { JOB, EXTENSION_PDF } from './config';
 
 app.post('/agendas/:agenda_id/agendaitems/documents/files/archive', async (req, res, next) => {
   try {
@@ -108,9 +108,15 @@ app.post('/subcases/:subcase_id/documents/files/archive', async (req, res, next)
 });
 
 async function documentBundlingJob(job, files) {
-  await overwriteFilenames(files);
-  await insertAndattachCollectionToJob(job, files);
-  await updateJobStatus(job.uri, null); // Unset "RUNNING" status, so the file-bundling-service can pick this up
+  try {
+    await overwriteFilenames(files);
+    await insertAndattachCollectionToJob(job, files);
+    await updateJobStatus(job.uri, JOB.STATUSES.SCHEDULED);
+  } catch (e) {
+    console.log(`Failed to initiate the file-bundling-job. reason, ${e.message}`);
+    console.trace(e);
+    await updateJobStatus(job.uri, JOB.STATUSES.FAILED, e.message);
+  }
 }
 
 async function createBundlingJobAndRespondWithPayload(files, res) {
@@ -120,7 +126,15 @@ async function createBundlingJobAndRespondWithPayload(files, res) {
     job = await findJobUsingCollection(collection.uri);
   }
   if (job) {
-    res.status(200);
+    if (job.status === JOB.STATUSES.FAILED && files?.length > 0) {
+      // to prevent a failed job from never retrying again with the same collection
+      await updateJobStatus(job.uri, JOB.STATUSES.BUSY);
+      job = await findJobUsingCollection(collection.uri); // changed metadata after update
+      documentBundlingJob(job, files); // Fire but don't await
+      res.status(201);
+    } else {
+      res.status(200);
+    }
   } else if (files && files.length > 0) {
     job = await createJob();
     documentBundlingJob(job, files); // Fire but don't await
@@ -132,14 +146,15 @@ async function createBundlingJobAndRespondWithPayload(files, res) {
   }
   const payload = {};
   payload.data = {
-    type: JSONAPI_JOB_TYPE,
+    type: JOB.JSONAPI_JOB_TYPE,
     id: job.id,
     attributes: {
       uri: job.uri,
       status: job.status,
       created: job.created,
-      started: job.started,
-      ended: job.ended
+      "time-started": job.started,
+      "time-ended": job.ended,
+      message: job.message
     }
   };
   res.send(payload);
