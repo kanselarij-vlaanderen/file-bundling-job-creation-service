@@ -2,7 +2,12 @@ import { sparqlEscapeUri } from 'mu';
 import { querySudo as query } from '@lblod/mu-auth-sudo';
 import { parseSparqlResults } from './util';
 import { getMandateesForDocument } from './document';
-import { LIMITED_ACCESS_ROLES, ACCESS_LEVEL_CONFIDENTIAL, DEBUG_LOG_ACCESS_ROLES } from '../config';
+import {
+  LIMITED_ACCESS_ROLES,
+  ACCESS_LEVEL_CONFIDENTIAL,
+  ACCESS_LEVEL_RETRACTED,
+  DEBUG_LOG_ACCESS_ROLES,
+} from '../config';
 
 
 async function fetchCurrentUser (sessionUri) {
@@ -85,8 +90,12 @@ async function filterByConfidentiality (files, currentUser, decisions) {
   if (currentUser.hasLimitedRole) {
     // We have to filter the confidential documents out asynchronously here. Incorporating the mandatees in the ./agenda.js queries could lead to multiple results per mandatee for 1 file in case of co-agenderingen
     // This will add a little time to the download job, but only for users with these limited access roles
+    // Retracted documents are considered similar to confidential documents
     for (let i = 0; i < files.length; i++) {
-      if (files[i].confidentialityLevel === ACCESS_LEVEL_CONFIDENTIAL) {
+      if (
+        files[i].confidentialityLevel === ACCESS_LEVEL_CONFIDENTIAL ||
+        files[i].confidentialityLevel === ACCESS_LEVEL_RETRACTED
+      ) {
         let documentMandatees = await getMandateesForDocument(files[i].document, decisions)
         let isAllowed = false;
         for (const userMandatee of currentUser.linkedMandatees) {
