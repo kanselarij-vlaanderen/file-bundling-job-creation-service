@@ -3,6 +3,7 @@ const RDF_JOB_TYPE = 'http://mu.semte.ch/vocabularies/ext/FileBundlingJob';
 const JSONAPI_JOB_TYPE = 'file-bundling-jobs';
 const LIMITED_ACCESS_ROLES = ['http://themis.vlaanderen.be/id/gebruikersrol/6bcebe59-0cb5-4c5e-ab40-ca98b65887a4'];
 const ACCESS_LEVEL_CONFIDENTIAL = "http://themis.vlaanderen.be/id/concept/toegangsniveau/9692ba4f-f59b-422b-9402-fcbd30a46d17";
+const ACCESS_LEVEL_RETRACTED = "http://themis.vlaanderen.be/id/concept/toegangsniveau/969a712a-b3d3-406f-ab08-5f665427185a";
 
 const EXTENSION_PDF = "pdf";
 
@@ -23,6 +24,7 @@ module.exports = {
   JSONAPI_JOB_TYPE,
   LIMITED_ACCESS_ROLES,
   ACCESS_LEVEL_CONFIDENTIAL,
+  ACCESS_LEVEL_RETRACTED,
   DECISION_RESULT_CODES_LIST,
   EXTENSION_PDF,
   DEBUG_LOG_ACCESS_ROLES
