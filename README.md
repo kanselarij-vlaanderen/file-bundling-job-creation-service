@@ -56,8 +56,11 @@ On successful creation of a job.
     "id": "5f680870-5984-11ea-98be-11315490e00b",
     "attributes": {
       "uri": "http://mu.semte.ch/services/file-bundling-service/file-bundling-jobs/5f680870-5984-11ea-98be-11315490e00b",
-      "status": "http://vocab.deri.ie/cogs#Running",
-      "created": "2020-02-27T17:12:45.943Z"
+      "status": "http://redpencil.data.gift/id/concept/JobStatus/busy",
+      "created": "2020-02-27T17:12:45.943Z",
+      "time-started": "2020-02-27T17:13:45.943Z",
+      "time-ended": "2020-02-27T17:15:45.943Z",
+      "message": "The error message we got if the job failed"
     }
   }
 }
