@@ -2,7 +2,7 @@ import { sparqlEscapeString, sparqlEscapeUri, query } from 'mu';
 import { parseSparqlResults } from './util';
 import { DECISION_RESULT_CODES_LIST } from '../config';
 
-const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisionsReleased) => {
+const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisionsReleased, newDocumentsOnly) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -29,8 +29,19 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisi
       ?originalDocument a dossier:Stuk ;
           dct:title ?originalDocumentName .
       OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
-      FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . } `
+  if (newDocumentsOnly) {
+    queryString += `
+      OPTIONAL { ?agendaitem prov:wasRevisionOf ?previousAgendaitem . }
+      FILTER NOT EXISTS { ?previousAgendaitem besluitvorming:geagendeerdStuk ?originalDocument . }
+    `
+  }
+    queryString += `
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
@@ -66,7 +77,7 @@ const fetchFilesFromAgenda = async (agendaId, currentUser, extensions, areDecisi
   return parseSparqlResults(data);
 };
 
-const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUser, extensions, areDecisionsReleased) => {
+const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUser, extensions, areDecisionsReleased, newDocumentsOnly) => {
   let queryString = `
   PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
   PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
@@ -89,7 +100,14 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
       ?agendaitem a besluit:Agendapunt ;
           besluitvorming:geagendeerdStuk ?originalDocument .
       OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
-      FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
+      FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }`
+  if (newDocumentsOnly) {
+    queryString += `
+      OPTIONAL { ?agendaitem prov:wasRevisionOf ?previousAgendaitem . }
+      FILTER NOT EXISTS { ?previousAgendaitem besluitvorming:geagendeerdStuk ?originalDocument . }
+    `
+  }
+  queryString += `
       {
         ?agenda a besluitvorming:Agenda ;
           mu:uuid ${sparqlEscapeString(agendaId)} ;
@@ -107,7 +125,11 @@ const fetchFilesFromAgendaByMandatees = async (agendaId, mandateeIds, currentUse
       }
       ?originalDocument a dossier:Stuk ;
           dct:title ?originalDocumentName .
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
@@ -164,7 +186,11 @@ const fetchDecisionsByMandatees = async (agendaId, mandateeIds, currentUser) => 
   WHERE {
       ?agendaitem a besluit:Agendapunt ;
           ^dct:subject/besluitvorming:heeftBeslissing/^besluitvorming:beschrijft ?originalDocument .
-          ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+          {
+              ?originalDocument prov:value ?originalFile .
+          } UNION {
+              ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+          }
       {
         select ?agendaitem WHERE {
           {
@@ -232,7 +258,11 @@ const fetchDecisionsFromAgenda = async (agendaId, currentUser) => {
           dct:hasPart ?agendaitem .
       ?agendaitem a besluit:Agendapunt ;
           ^dct:subject/besluitvorming:heeftBeslissing/^besluitvorming:beschrijft ?originalDocument .
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
 
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
@@ -304,7 +334,11 @@ const fetchFilesFromAgendaitem = async(agendaitemId, currentUser, extensions) =>
           dct:title ?originalDocumentName .
       OPTIONAL { ?nextDocument pav:previousVersion ?originalDocument . }
       FILTER NOT EXISTS { ?agendaitem besluitvorming:geagendeerdStuk ?nextDocument . }
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
@@ -364,7 +398,11 @@ const fetchFilesFromCases = async(caseId, currentUser, extensions) => {
       ?originalDocument a dossier:Stuk ;
           dct:title ?originalDocumentName .
       FILTER NOT EXISTS { [] pav:previousVersion ?originalDocument }
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile .
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
@@ -419,7 +457,11 @@ const fetchFilesFromSubcases = async(subcaseId, currentUser, extensions) => {
       ?originalDocument a dossier:Stuk ;
           dct:title ?originalDocumentName .
       FILTER NOT EXISTS { [] pav:previousVersion ?originalDocument }
-      ?originalDocument prov:value / ^prov:hadPrimarySource? ?originalFile . 
+      {
+          ?originalDocument prov:value ?originalFile .
+      } UNION {
+          ?originalDocument prov:value / ^prov:hadPrimarySource ?originalFile .
+      }
       OPTIONAL {
           ?originalDocument sign:getekendStukKopie ?flattenedDocument .
           ?flattenedDocument prov:value ?flattenedFile .
