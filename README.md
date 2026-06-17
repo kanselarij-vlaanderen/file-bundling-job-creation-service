@@ -1,5 +1,7 @@
 # Kaleidos file bundling job creation service
 
+> **⚠️ DEPRECATED:** This service has been merged into the [file-bundling-service](https://github.com/kanselarij-vlaanderen/file-bundling-service) (as of file-bundling-service v4.0.0). All endpoints below are now served by that service directly. This repository is no longer maintained.
+
 Service to create [file-bundling jobs](https://github.com/kanselarij-vlaanderen/file-bundling-service) for a set of files relating to a Kaleidos-specific entity.
 
 ## Rationale
